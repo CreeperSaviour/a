@@ -19,6 +19,8 @@ def ImgSplit(im):
             buff.append(c)
     return buff
 
+
+
 if __name__ == '__main__':
     im = Image.open('./getimg.png')
     # for ig in ImgSplit(im):
