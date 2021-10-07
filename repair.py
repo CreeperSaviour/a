@@ -90,10 +90,16 @@ class Application(tk.Frame):
         self.button = tk.Button(self.master, text="Result", command=show_result)
         self.button.pack()
 
+def read_data(data):
+    data = {}
+    
+
 if __name__ == "__main__":
+    in_data = "5 5\n[3, 1] [2, 2] [4, 4] [0, 1] [2, 4]\n[2, 3] [4, 1] [3, 0] [4, 3] [0, 2]\n[4, 2] [3, 1] [4, 0] [5, 0] [1, 0]\n[1, 4] [1, 3] [5, 3] [1, 1] [-1, -1]\n[2, 1] [3, 3] [2, 0] [1, 2] [3, 4]\n0 0 0 2 2\n0 2 3 0 2\n0 2 3 1 3\n0 2 0 2 0\n2 0 0 1 2"
     img_path = './getimg.png'
     XS, YS = 5, 5
     scale = 0.5
     root = tk.Tk()
+    data = read_data(in_data)
     app = Application(root, img_path, XS, YS, scale)
     app.mainloop()
