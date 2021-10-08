@@ -79,8 +79,9 @@ class Application(tk.Frame):
         super().__init__(master)
         global canvas
 
+        self.XS, self.YS = XS, YS
         img = Image.open(img_path)
-        imgs, split_height, split_width = ImgSplit(img, XS, YS, scale)
+        self.imgs, self.split_height, self.split_width = ImgSplit(img, XS, YS, scale)
 
         self.master.title("画像の表示")
         self.master.geometry("{}x{}".format(img.width, img.height))
@@ -91,19 +92,52 @@ class Application(tk.Frame):
         print(result)
         for y in range(YS):
             for x in range(XS):
-                self.photo_image.append(ImageTk.PhotoImage(imgs[y*YS+x].rotate(result[y][x]["rotate"] * 90)))
+                self.photo_image.append(ImageTk.PhotoImage(self.imgs[y*YS+x].rotate(result[y][x]["rotate"] * 90)))
         for y in range(YS):
             for x in range(XS):
                 pos = result[y][x]["pos"]
-                width = split_width * pos[0] + (split_width // 2)
-                height = split_height * pos[1] + (split_height // 2)
+                width = self.split_width * pos[0] + (self.split_width // 2)
+                height = self.split_height * pos[1] + (self.split_height // 2)
                 canvas.create_image(width, height, image=self.photo_image[y*YS+x], tag='img{}{}'.format(pos[0], pos[1]))
         canvas.pack()
-        canvas.bind("<ButtonPress-1>", lambda ev: [left_click(ev, img.height, img.width, split_height, split_width, XS, YS, scale, imgs, self.photo_image)])
-        canvas.bind("<ButtonPress-3>", lambda ev: [right_click(ev, img.height, img.width, split_height, split_width, XS, YS, scale, imgs)])
+        canvas.bind("<ButtonPress-1>", lambda ev: [left_click(ev, img.height, img.width, self.split_height, self.split_width, XS, YS, scale, self.imgs, self.photo_image)])
+        canvas.bind("<ButtonPress-3>", lambda ev: [right_click(ev, img.height, img.width, self.split_height, self.split_width, XS, YS, scale, self.imgs)])
 
         self.button = tk.Button(self.master, text="Result", command=show_result)
+        self.button_right = tk.Button(self.master, text="1行ずつ右にずらす", command=self.move_right)
+        self.button_up = tk.Button(self.master, text="1列ずつ上にずらす", command=self.move_up)
         self.button.pack()
+        self.button_right.pack()
+        self.button_up.pack()
+
+
+    def move_right(self):
+        for y in range(self.YS):
+            for x in range(self.XS):
+                result[y][x]["pos"] = ((result[y][x]["pos"][0] + 1) % self.XS, result[y][x]["pos"][1])
+        for y in range(self.YS):
+            for x in range(self.XS):
+                canvas.delete('img{}{}'.format(x, y))
+        for y in range(self.YS):
+            for x in range(self.XS):
+                pos = result[y][x]["pos"]
+                width = self.split_width * pos[0] + (self.split_width // 2)
+                height = self.split_height * pos[1] + (self.split_height // 2)
+                canvas.create_image(width, height, image=self.photo_image[y*self.YS+x], tag='img{}{}'.format(pos[0], pos[1]))
+
+    def move_up(self):
+        for y in range(self.YS):
+            for x in range(self.XS):
+                result[y][x]["pos"] = (result[y][x]["pos"][0], (result[y][x]["pos"][1] - 1) % self.YS)
+        for y in range(self.YS):
+            for x in range(self.XS):
+                canvas.delete('img{}{}'.format(x, y))
+        for y in range(self.YS):
+            for x in range(self.XS):
+                pos = result[y][x]["pos"]
+                width = self.split_width * pos[0] + (self.split_width // 2)
+                height = self.split_height * pos[1] + (self.split_height // 2)
+                canvas.create_image(width, height, image=self.photo_image[y*self.YS+x], tag='img{}{}'.format(pos[0], pos[1]))
 
 def read_data(data):
     global result
