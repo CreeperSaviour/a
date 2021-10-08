@@ -1,13 +1,17 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 
+"""
+[a, b]はその座標でa,bに行かなければならない
+"""
+
 canvas = None
 clicked_pos = (-1, -1)
 
 result = []
 img_t = []
 
-def ImgSplit(im, scale=1.0):
+def ImgSplit(im, XS, YS, scale=1.0):
     im = im.resize(((int)(im.height * scale), (int)(im.width * scale)))
     height = im.height / YS
     width = im.width / XS
@@ -27,7 +31,7 @@ def left_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs
     x = (int)(ev.x / (width * scale / XS))
     y = (int)(ev.y / (height * scale / YS))
     # print('{}{}'.format((int)(x), (int)(y)))
-    if clicked_pos[0] == -1 and clicked_pos[1] == -1:
+    if clicked_pos == (-1, -1):
         clicked_pos = ((int)(x), (int)(y))
     else:
         x2, y2 = clicked_pos[0], clicked_pos[1]
@@ -35,22 +39,37 @@ def left_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs
         width_t, height_t = split_width * x2 + (split_width // 2), split_height * y2 + (split_height // 2)
         canvas.delete('img{}{}'.format(x, y))
         canvas.delete('img{}{}'.format(x2, y2))
-        canvas.create_image(width, height, image=photo_image[y2*YS+x2], tag='img{}{}'.format(x, y))
-        canvas.create_image(width_t, height_t, image=photo_image[y*YS+x], tag='img{}{}'.format(x2, y2))
-        photo_image[y2*YS+x2], photo_image[y*YS+x] = photo_image[y*YS+x], photo_image[y2*YS+x2]
-        result[y][x], result[y2][x2] = result[y2][x2], result[y][x]
+        print('x, y, x2, y2', x, y, x2, y2)
+        for i in range(YS):
+            for j in range(XS):
+                if result[i][j]["pos"] == (x, y):
+                    x3, y3 = j, i
+                if result[i][j]["pos"] == (x2, y2):
+                    x4, y4 = j, i
+        print('x3, y3, x4, y4', x3, y3, x4, y4)
+        canvas.create_image(width, height, image=photo_image[y4*YS+x4], tag='img{}{}'.format(x, y))
+        canvas.create_image(width_t, height_t, image=photo_image[y3*YS+x3], tag='img{}{}'.format(x2, y2))
+        # photo_image[y2*YS+x2], photo_image[y*YS+x] = photo_image[y*YS+x], photo_image[y2*YS+x2]
+        result[y3][x3], result[y4][x4] = result[y4][x4], result[y3][x3]
         clicked_pos = (-1, -1)
 
 def right_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs):
     global img_t
     x = (int)(ev.x / (width * scale / XS))
     y = (int)(ev.y / (height * scale / YS))
-    x2, y2 = result[y][x]["pos"]
+    x2, y2 = -1, -1
+    for i in range(YS):
+        for j in range(XS):
+            if result[i][j]["pos"] == (x, y):
+                x2, y2 = j, i
+    # x2, y2 = result[y][x]["pos"]
     width, height = split_width * x + (split_width // 2), split_height * y + (split_height // 2)
     result[y][x]["rotate"] = (result[y][x]["rotate"] + 1) % 4
     canvas.delete('img{}{}'.format(x, y))
+    print('x, y, x2, y2', x, y, x2, y2)
     img_t.append(ImageTk.PhotoImage(imgs[y2*YS+x2].rotate(result[y][x]["rotate"] * 90)))
     canvas.create_image(width, height, image=img_t[len(img_t)-1], tag='img{}{}'.format(x, y))
+    # canvas.create_image(width, height, image=img_t[len(img_t)-1], tag='img{}{}'.format(x2, y2))
 
 def show_result():
     print(result)
@@ -61,14 +80,7 @@ class Application(tk.Frame):
         global canvas
 
         img = Image.open(img_path)
-        imgs, split_height, split_width = ImgSplit(img, scale)
-        for i in range(YS):
-            result.append([])
-            for j in range(XS):
-                c = {}
-                c["pos"] = (j, i)
-                c["rotate"] = 0
-                result[i].append(c)
+        imgs, split_height, split_width = ImgSplit(img, XS, YS, scale)
 
         self.master.title("画像の表示")
         self.master.geometry("{}x{}".format(img.width, img.height))
@@ -76,13 +88,16 @@ class Application(tk.Frame):
         canvas = tk.Canvas(self.master, width=(int)(img.width * scale), height=(int)(img.height * scale))
 
         self.photo_image = []
+        print(result)
         for y in range(YS):
             for x in range(XS):
-                self.photo_image.append(ImageTk.PhotoImage(imgs[y*YS+x]))
-
-                width = split_width * x + (split_width // 2)
-                height = split_height * y + (split_height // 2)
-                canvas.create_image(width, height, image=self.photo_image[y*YS+x], tag='img{}{}'.format(x, y))
+                self.photo_image.append(ImageTk.PhotoImage(imgs[y*YS+x].rotate(result[y][x]["rotate"] * 90)))
+        for y in range(YS):
+            for x in range(XS):
+                pos = result[y][x]["pos"]
+                width = split_width * pos[0] + (split_width // 2)
+                height = split_height * pos[1] + (split_height // 2)
+                canvas.create_image(width, height, image=self.photo_image[y*YS+x], tag='img{}{}'.format(pos[0], pos[1]))
         canvas.pack()
         canvas.bind("<ButtonPress-1>", lambda ev: [left_click(ev, img.height, img.width, split_height, split_width, XS, YS, scale, imgs, self.photo_image)])
         canvas.bind("<ButtonPress-3>", lambda ev: [right_click(ev, img.height, img.width, split_height, split_width, XS, YS, scale, imgs)])
@@ -91,15 +106,67 @@ class Application(tk.Frame):
         self.button.pack()
 
 def read_data(data):
-    data = {}
-    
+    global result
+    split_data = data.split('\n')
+
+    XS, YS = split_data[0].split(' ')
+    XS, YS = int(XS), int(YS)
+    POS = []
+    ROTATE = []
+
+    i = 1
+    while i != int(YS) + 1:
+        POS.append([])
+        e = split_data[i].replace(', ', ',').replace('[', '').replace(']', '')
+        e2 = e.split(' ')
+        for e3 in e2:
+            e3 = e3.split(',')
+            POS[i-1].append(((int)(e3[1]), (int)(e3[0])))
+        i += 1
+
+    while i != int(YS) * 2 + 1:
+        ROTATE.append([])
+        e = split_data[i].split(' ')
+        e = list(map(lambda x: int(x), e))
+        for e2 in e:
+            ROTATE[i-int(YS)-1].append(e2)
+        i += 1
+
+    result = [[None] * YS for i in range(XS)]
+    for y in range(YS):
+        for x in range(XS):
+            if POS[y][x] == (-1, -1):
+                continue
+            c = {"pos": None, "rotate": None}
+            c["pos"] = POS[y][x] # posにはその画像がもともとどこにいたか
+            c["rotate"] = ROTATE[y][x]
+            result[y][x] = c
+
+    tmp = [[None] * YS for i in range(XS)]
+    for y in range(YS):
+        for x in range(XS):
+            if POS[y][x] == (-1, -1):
+                continue
+            xt, yt = POS[y][x]
+            tmp[yt][xt] = 0
+    c = {"pos": None, "rotate": None}
+    for y in range(YS):
+        for x in range(XS):
+            if tmp[y][x] == None:
+                c["pos"] = (x, y)
+    for y in range(YS):
+        for x in range(XS):
+            if POS[y][x] == (-1, -1):
+                c["rotate"] = ROTATE[c["pos"][1]][c["pos"][0]]
+                result[y][x] = c
+
+    return XS, YS
 
 if __name__ == "__main__":
-    in_data = "5 5\n[3, 1] [2, 2] [4, 4] [0, 1] [2, 4]\n[2, 3] [4, 1] [3, 0] [4, 3] [0, 2]\n[4, 2] [3, 1] [4, 0] [5, 0] [1, 0]\n[1, 4] [1, 3] [5, 3] [1, 1] [-1, -1]\n[2, 1] [3, 3] [2, 0] [1, 2] [3, 4]\n0 0 0 2 2\n0 2 3 0 2\n0 2 3 1 3\n0 2 0 2 0\n2 0 0 1 2"
+    in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 2 2\n0 2 3 0 2\n0 2 3 1 3\n0 2 0 2 0\n2 0 0 1 2"
+    XS, YS = read_data(in_data)
     img_path = './getimg.png'
-    XS, YS = 5, 5
     scale = 0.5
     root = tk.Tk()
-    data = read_data(in_data)
     app = Application(root, img_path, XS, YS, scale)
     app.mainloop()
