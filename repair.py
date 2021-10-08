@@ -1,5 +1,6 @@
 import tkinter as tk
 from PIL import Image, ImageTk
+import copy
 
 """
 [a, b]はその座標でa,bに行かなければならない
@@ -137,12 +138,27 @@ class Application(tk.Frame):
                 pos = result[y][x]["pos"]
                 width = self.split_width * pos[0] + (self.split_width // 2)
                 height = self.split_height * pos[1] + (self.split_height // 2)
-                canvas.create_image(width, height, image=self.photo_image[y*self.YS+x], tag='img{}{}'.format(pos[0], pos[1]))
+                canvas.create_image(width, height, image=ImageTk.PhotoImage(self.imgs[pos[1]*YS+pos[0]].rotate(result[y][x]["rotate"] * 90)), tag='img{}{}'.format(pos[0], pos[1]))
 
     def move_up(self):
+        global img_t, result
+        result_t = copy.deepcopy(result)
         for y in range(self.YS):
             for x in range(self.XS):
-                result[y][x]["pos"] = (result[y][x]["pos"][0], (result[y][x]["pos"][1] - 1) % self.YS)
+                result_t[y][x] = {"pos": (result[y][x]["pos"][0], (result[y][x]["pos"][1] - 1) % self.YS), "rotate": result[y][x]["rotate"]}
+        result = result_t
+        # tmp = []
+        # for x in range(self.XS):
+        #     tmp.append(result[0][x]["rotate"])
+        # for y in range(self.YS - 1):
+        #     for x in range(self.XS):
+        #         result[y][x]["rotate"] = result[y + 1][x]["rotate"]
+        #         for i in range(YS):
+        #             for j in range(XS):
+        #                 if result[i][j]["pos"] == (x, y):
+        #                     x2, y2 = j, i
+        # for x in range(self.XS):
+        #     result[self.YS - 1][x]["rotate"] = tmp[x]
         for y in range(self.YS):
             for x in range(self.XS):
                 canvas.delete('img{}{}'.format(x, y))
@@ -151,7 +167,9 @@ class Application(tk.Frame):
                 pos = result[y][x]["pos"]
                 width = self.split_width * pos[0] + (self.split_width // 2)
                 height = self.split_height * pos[1] + (self.split_height // 2)
-                canvas.create_image(width, height, image=self.photo_image[y*self.YS+x], tag='img{}{}'.format(pos[0], pos[1]))
+                # canvas.create_image(width, height, image=self.photo_image[y*self.YS+x], tag='img{}{}'.format(pos[0], pos[1]))
+                img_t.append(ImageTk.PhotoImage(self.imgs[y*YS+x].rotate(result[pos[1]][pos[0]]["rotate"] * 90)))
+                canvas.create_image(width, height, image=img_t[len(img_t) - 1], tag='img{}{}'.format(pos[0], pos[1]))
 
 def read_data(data):
     global result
