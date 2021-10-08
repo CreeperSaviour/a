@@ -64,15 +64,13 @@ def right_click(ev, height, width, split_height, split_width, XS, YS, scale, img
                 x2, y2 = j, i
     # x2, y2 = result[y][x]["pos"]
     width, height = split_width * x + (split_width // 2), split_height * y + (split_height // 2)
-    result[y][x]["rotate"] = (result[y][x]["rotate"] + 1) % 4
+    result[y2][x2]["rotate"] = (result[y2][x2]["rotate"] + 1) % 4
     canvas.delete('img{}{}'.format(x, y))
     print('x, y, x2, y2', x, y, x2, y2)
-    img_t.append(ImageTk.PhotoImage(imgs[y2*YS+x2].rotate(result[y][x]["rotate"] * 90)))
+    img_t.append(ImageTk.PhotoImage(imgs[y2*YS+x2].rotate(result[y2][x2]["rotate"] * 90)))
     canvas.create_image(width, height, image=img_t[len(img_t)-1], tag='img{}{}'.format(x, y))
     # canvas.create_image(width, height, image=img_t[len(img_t)-1], tag='img{}{}'.format(x2, y2))
 
-def show_result():
-    print(result)
 
 class Application(tk.Frame):
     def __init__(self, master, img_path, XS, YS, scale):
@@ -103,13 +101,29 @@ class Application(tk.Frame):
         canvas.bind("<ButtonPress-1>", lambda ev: [left_click(ev, img.height, img.width, self.split_height, self.split_width, XS, YS, scale, self.imgs, self.photo_image)])
         canvas.bind("<ButtonPress-3>", lambda ev: [right_click(ev, img.height, img.width, self.split_height, self.split_width, XS, YS, scale, self.imgs)])
 
-        self.button = tk.Button(self.master, text="Result", command=show_result)
+        self.button = tk.Button(self.master, text="Result", command=self.show_result)
         self.button_right = tk.Button(self.master, text="1行ずつ右にずらす", command=self.move_right)
         self.button_up = tk.Button(self.master, text="1列ずつ上にずらす", command=self.move_up)
         self.button.pack()
         self.button_right.pack()
         self.button_up.pack()
 
+    def show_result(self):
+        data = "{} {}".format(self.XS, self.YS)
+        data += "\n"
+        for y in range(self.YS):
+            child_data = []
+            for x in range(self.XS):
+                child_data.append("[{}, {}]".format(result[y][x]["pos"][1], result[y][x]["pos"][0]))
+            child_data = ' '.join(child_data)
+            data += child_data + '\n'
+        for y in range(self.YS):
+            child_data = []
+            for x in range(self.XS):
+                child_data.append(str(result[y][x]["rotate"]))
+            child_data = ' '.join(child_data)
+            data += child_data + '\n'
+        print(data)
 
     def move_right(self):
         for y in range(self.YS):
