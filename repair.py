@@ -28,7 +28,7 @@ def ImgSplit(im, XS, YS, scale=1.0):
     return buff, height, width
 
 def left_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs, photo_image):
-    global clicked_pos
+    global clicked_pos, canvas
     x = (int)(ev.x / (width * scale / XS))
     y = (int)(ev.y / (height * scale / YS))
     # print('{}{}'.format((int)(x), (int)(y)))
@@ -55,7 +55,7 @@ def left_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs
         clicked_pos = (-1, -1)
 
 def right_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs):
-    global img_t
+    global img_t, canvas
     x = (int)(ev.x / (width * scale / XS))
     y = (int)(ev.y / (height * scale / YS))
     x2, y2 = -1, -1
@@ -74,40 +74,55 @@ def right_click(ev, height, width, split_height, split_width, XS, YS, scale, img
 
 
 class Application(tk.Frame):
-    def __init__(self, master, img_path, XS, YS, scale):
+    def __init__(self, master, img_path, scale):
         super().__init__(master)
         global canvas
 
-        self.XS, self.YS = XS, YS
-        img = Image.open(img_path)
-        self.imgs, self.split_height, self.split_width = ImgSplit(img, XS, YS, scale)
+        self.img_path = img_path
+        self.scale = scale
 
         self.master.title("画像の表示")
-        self.master.geometry("{}x{}".format(img.width, img.height))
+        # self.master.geometry("{}x{}".format(img.width, img.height))
+        self.master.geometry("{}x{}".format(1200, 1000))
 
-        canvas = tk.Canvas(self.master, width=(int)(img.width * scale), height=(int)(img.height * scale))
+        canvas = tk.Canvas(self.master, width=(int)(1000), height=(int)(800))
 
-        self.photo_image = []
-        print(result)
-        for y in range(YS):
-            for x in range(XS):
-                self.photo_image.append(ImageTk.PhotoImage(self.imgs[y*YS+x].rotate(result[y][x]["rotate"] * 90)))
-        for y in range(YS):
-            for x in range(XS):
-                pos = result[y][x]["pos"]
-                width = self.split_width * pos[0] + (self.split_width // 2)
-                height = self.split_height * pos[1] + (self.split_height // 2)
-                canvas.create_image(width, height, image=self.photo_image[y*YS+x], tag='img{}{}'.format(pos[0], pos[1]))
+        self.entry = tk.Entry(self.master, width=400)
+        self.entry.pack()
+        self.button_load = tk.Button(self.master, text="読み込み", command=self.show_canvas)
+        self.button_load.pack()
+
         canvas.pack()
-        canvas.bind("<ButtonPress-1>", lambda ev: [left_click(ev, img.height, img.width, self.split_height, self.split_width, XS, YS, scale, self.imgs, self.photo_image)])
-        canvas.bind("<ButtonPress-3>", lambda ev: [right_click(ev, img.height, img.width, self.split_height, self.split_width, XS, YS, scale, self.imgs)])
-
+        canvas.bind("<ButtonPress-1>", lambda ev: [left_click(ev, self.img.height, self.img.width, self.split_height, self.split_width, self.XS, self.YS, self.scale, self.imgs, self.photo_image)])
+        canvas.bind("<ButtonPress-3>", lambda ev: [right_click(ev, self.img.height, self.img.width, self.split_height, self.split_width, self.XS, self.YS, self.scale, self.imgs)])
+        
         self.button = tk.Button(self.master, text="Result", command=self.show_result)
         self.button_right = tk.Button(self.master, text="1行ずつ右にずらす", command=self.move_right)
         self.button_up = tk.Button(self.master, text="1列ずつ上にずらす", command=self.move_up)
         self.button.pack()
         self.button_right.pack()
         self.button_up.pack()
+
+
+    def show_canvas(self):
+        # in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 2 2\n0 2 3 0 2\n0 2 3 1 3\n0 2 0 2 0\n2 0 0 1 2"
+        in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 0 0\n0 0 1 0 3\n0 2 0 1 0\n0 2 0 2 0\n0 0 1 1 2"
+        self.XS, self.YS = read_data(in_data)
+
+        self.img = Image.open(self.img_path)
+        self.imgs, self.split_height, self.split_width = ImgSplit(self.img, self.XS, self.YS, scale)
+
+        self.photo_image = []
+        print(result)
+        for y in range(self.YS):
+            for x in range(self.XS):
+                self.photo_image.append(ImageTk.PhotoImage(self.imgs[y*self.YS+x].rotate(result[y][x]["rotate"] * 90)))
+        for y in range(self.YS):
+            for x in range(self.XS):
+                pos = result[y][x]["pos"]
+                width = self.split_width * pos[0] + (self.split_width // 2)
+                height = self.split_height * pos[1] + (self.split_height // 2)
+                canvas.create_image(width, height, image=self.photo_image[y*self.YS+x], tag='img{}{}'.format(pos[0], pos[1]))
 
     def show_result(self):
         data = "{} {}".format(self.XS, self.YS)
@@ -229,10 +244,8 @@ def read_data(data):
     return XS, YS
 
 if __name__ == "__main__":
-    in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 2 2\n0 2 3 0 2\n0 2 3 1 3\n0 2 0 2 0\n2 0 0 1 2"
-    XS, YS = read_data(in_data)
     img_path = './getimg.png'
     scale = 0.5
     root = tk.Tk()
-    app = Application(root, img_path, XS, YS, scale)
+    app = Application(root, img_path, scale)
     app.mainloop()
