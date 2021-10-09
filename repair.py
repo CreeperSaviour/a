@@ -48,10 +48,17 @@ def left_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs
                 if result[i][j]["pos"] == (x2, y2):
                     x4, y4 = j, i
         print('x3, y3, x4, y4', x3, y3, x4, y4)
-        canvas.create_image(width, height, image=photo_image[y4*YS+x4], tag='img{}{}'.format(x, y))
-        canvas.create_image(width_t, height_t, image=photo_image[y3*YS+x3], tag='img{}{}'.format(x2, y2))
+        print('result[y3][x3]["rotate"]', result[y3][x3]["rotate"])
+        print('result[y4][x4]["rotate"]', result[y4][x4]["rotate"])
+        print(result)
+        img_t.append(ImageTk.PhotoImage(imgs[y4*YS+x4].rotate(result[y4][x4]["rotate"] * 90)))
+        canvas.create_image(width, height, image=img_t[-1], tag='img{}{}'.format(x, y))
+        img_t.append(ImageTk.PhotoImage(imgs[y3*YS+x3].rotate(result[y3][x3]["rotate"] * 90)))
+        canvas.create_image(width_t, height_t, image=img_t[-1], tag='img{}{}'.format(x2, y2))
+        result[y3][x3]["pos"], result[y4][x4]["pos"] = result[y4][x4]["pos"], result[y3][x3]["pos"]
+        
+        print(result)
         # photo_image[y2*YS+x2], photo_image[y*YS+x] = photo_image[y*YS+x], photo_image[y2*YS+x2]
-        result[y3][x3], result[y4][x4] = result[y4][x4], result[y3][x3]
         clicked_pos = (-1, -1)
 
 def right_click(ev, height, width, split_height, split_width, XS, YS, scale, imgs):
@@ -87,8 +94,8 @@ class Application(tk.Frame):
 
         canvas = tk.Canvas(self.master, width=(int)(1000), height=(int)(800))
 
-        self.entry = tk.Entry(self.master, width=400)
-        self.entry.pack()
+        self.text = tk.Text(self.master, width=400, height=5)
+        self.text.pack()
         self.button_load = tk.Button(self.master, text="読み込み", command=self.show_canvas)
         self.button_load.pack()
 
@@ -106,7 +113,8 @@ class Application(tk.Frame):
 
     def show_canvas(self):
         # in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 2 2\n0 2 3 0 2\n0 2 3 1 3\n0 2 0 2 0\n2 0 0 1 2"
-        in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 0 0\n0 0 1 0 3\n0 2 0 1 0\n0 2 0 2 0\n0 0 1 1 2"
+        # in_data = "5 5\n[2, 3] [2, 2] [4, 4] [1, 0] [4, 2]\n[3, 2] [1, 4] [0, 3] [3, 4] [2, 0]\n[2, 4] [1, 3] [0, 4] [0, 0] [0, 1]\n[4, 1] [3, 1] [3, 0] [1, 1] [-1, -1]\n[1, 2] [3, 3] [0, 2] [2, 1] [4, 3]\n0 0 0 0 0\n0 0 1 0 3\n0 2 0 1 0\n0 2 0 2 0\n0 0 1 1 2"
+        in_data = self.text.get("1.0", "end")
         self.XS, self.YS = read_data(in_data)
 
         self.img = Image.open(self.img_path)
@@ -238,14 +246,14 @@ def read_data(data):
     for y in range(YS):
         for x in range(XS):
             if POS[y][x] == (-1, -1):
-                c["rotate"] = ROTATE[c["pos"][1]][c["pos"][0]]
+                c["rotate"] = ROTATE[y][x]
                 result[y][x] = c
 
     return XS, YS
 
 if __name__ == "__main__":
     img_path = './getimg.png'
-    scale = 0.5
+    scale = 0.3
     root = tk.Tk()
     app = Application(root, img_path, scale)
     app.mainloop()
